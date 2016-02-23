@@ -1,9 +1,3 @@
-str_select <- function(s,p,reverse=FALSE)
-    {
-        k <- str_detect(s,p)
-        if (reverse) k <- !k
-        s[k]
-    }
 
 ##' Read EyeLink ASC file
 ##'

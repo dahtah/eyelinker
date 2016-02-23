@@ -14,4 +14,5 @@ NULL
 #' @importFrom plyr llply dlply ldply mutate
 #' @importFrom stringi stri_enc_toascii
 #' @importFrom magrittr "%>%"
+#' @importFrom intervals which_nearest distance_to_nearest Intervals
 NULL
