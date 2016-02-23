@@ -6,7 +6,7 @@ for  (f in files)
 {
     fpath <- system.file(paste0("extdata/",f),package="eyelinker")
     tst <- read.asc(fpath)
-    expect_equal(sort(names(tst)),c("blinks", "fix","msg","raw", "sacc"  ))
+    expect_equal(sort(names(tst)),c("blinks", "fix","info","msg","raw", "sacc"  ))
 }
 })
 

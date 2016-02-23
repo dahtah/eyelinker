@@ -4,12 +4,11 @@
 ##' @param x a set of numeric values 
 ##' @param Intv a two-column matrix or an object of class Intervals
 ##' @return for each value in x: if x[i] in in the set of intervals, the index of the corresponding interval(s), NA if no interval contains x[i]
-##' @seealso %In%
+##' @seealso `%In%`
 ##' @examples
 ##' start <- c(0,1,2)
 ##' end <- c(.5,1.3,3)
-##' intv <- Intervals(cbind(start,end))
-##' intv
+##' intv <- cbind(start,end) #The first interval is 0-0.5, second is 1-1.3, etc. 
 ##' whichInterval(seq(0,3,l=10),intv)
 ##' @author Simon Barthelme
 ##' @export
@@ -42,8 +41,7 @@ whichInterval <- function(x,Intv)
 ##' @examples
 ##' start <- c(0,1,2)
 ##' end <- c(.5,1.3,3)
-##' intv <- Intervals(cbind(start,end))
-##' intv
+##' intv <- cbind(start,end) #The first interval is 0-0.5, second is 1-1.3, etc. 
 ##' c(0,.6,1.5,3) %In% intv
 ##' @export
 `%In%` <- function(x,Intv)

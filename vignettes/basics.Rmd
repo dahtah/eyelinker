@@ -13,6 +13,8 @@ We'll use test data supplied by SR Research (which I found in the cili package f
 
 ```{r}
 require(eyelinker)
+require(dplyr)
+
 #Look for file 
 fpath <- system.file("extdata/mono500.asc.gz",package="eyelinker")
 ```
@@ -57,6 +59,12 @@ str(dat$info)
 
 Here we have a monocular recording of the left eye. 
 
+## What are the units? 
+
+Depending on how the Eyelink is set up, positions can be reported in pixels or degrees, relative to the head, the screen or the camera.
+I'm guessing the most common case is to use screen coordinates, but I don't know whether the coordinate system is stored in a predictable manner in asc files. If you have any suggestions please email me.
+I'll assume you know what the relevant units are. 
+
 ## Raw data
 
 The raw data has a simple structure:
@@ -70,17 +78,78 @@ head(raw,3)
 - xp, yp:  x and y position of the recorded eye
 - ps: pupil size (arb. units)
 - cr.info: status of corneal reflection tracking.  "..." means all's well. See manual for more.
-
-The block variable is probably irrelevant in most cases (the .asc file is divided into START and END blocks, and the block variable indexes them).
+- block: the .asc file is divided into START and END blocks, and the block variable indexes them.
 
 In a binocular recording the raw data has the following structure:
 
 ```{r}
 dat.bi <- system.file("extdata/bino1000.asc.gz",package="eyelinker") %>% read.asc
+
 head(dat.bi$raw,3)
 ```
 
 The variables are the same as before, with the addition of a postfix corresponding to the eye (i.e. xpl is the x position of the left eye).
 
 
+## Tidying up raw data
 
+It's sometimes more convenient for plotting and analysis if the raw data are in "long" rather than "wide" format, as in the following example:
+
+```{r}
+library(tidyr)
+
+raw.long <- dplyr::select(raw,time,xp,yp,block) %>% gather("coord","pos",xp,yp)
+head(raw.long,2)
+tail(raw.long,2)
+```
+
+The eye position is now in a single column rather than two, and the column "coord" tells us if the valuye corresponds to the x or y position. The benefits may not be obvious now, but it does make plotting the traces via ggplot2 a lot easier:
+
+
+```{r}
+require(ggplot2)
+raw.long <- mutate(raw.long,ts=(time-min(time))/1e3) #let's have time in sec. 
+ggplot(raw.long,aes(ts,pos,col=coord))+geom_point()
+```
+
+In this particular file there are four separate recording periods, corresponding to different "blocks" in the asc file, which we can check using:
+
+```{r}
+ggplot(raw.long,aes(ts,pos,col=coord))+geom_line()+facet_wrap(~ block)
+```
+
+## Saccades
+
+The Eyelink automatically detects saccades in an online fashion. The results are converted to a data.frame: 
+
+```{r}
+sac <- dat$sac
+head(sac,2)
+```
+
+Each line corresponds to a saccade, and the different columns are:
+
+- stime and etime: the start and end times of the saccade
+- dur: duration (ms)
+- sxp, yxp: starting position
+- exp, eyp: end position
+- ampl: saccade amplitude
+- pv: peak velocity
+- block: see above
+
+In the binocular case, we have:
+
+```{r}
+head(dat.bi$sac,3)
+```
+
+The only difference is in the "eye" column, which tells you in which eye the saccade was first recorded. 
+
+## Labelling the saccades in the raw traces
+
+To see if the saccades have been labelled correctly, we'll have to find the corresponding time samples in the raw data.
+
+```{r}
+
+
+```

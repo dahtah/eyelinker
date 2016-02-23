@@ -20,8 +20,7 @@ Wrapper around distance_to_nearest from the Intervals package.
 \examples{
 start <- c(0,1,2)
 end <- c(.5,1.3,3)
-intv <- Intervals(cbind(start,end))
-intv
+intv <- cbind(start,end) #The first interval is 0-0.5, second is 1-1.3, etc. 
 c(0,.6,1.5,3) \%In\% intv
 }
 \author{

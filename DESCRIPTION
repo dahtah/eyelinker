@@ -21,5 +21,8 @@ License: GPL-3
 RoxygenNote: 5.0.1
 Suggests: testthat,
     knitr,
-    rmarkdown
+    rmarkdown,
+    dplyr,
+    ggplot2,
+    tidyr
 VignetteBuilder: knitr
