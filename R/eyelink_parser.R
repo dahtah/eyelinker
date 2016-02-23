@@ -22,6 +22,7 @@ str_select <- function(s,p,reverse=FALSE)
 ##' fix: fixations
 ##' blinks: blinks
 ##' sacc: saccades
+##' info: meta-data
 ##' 
 ##' @author Simon Barthelme
 ##' @examples
@@ -67,7 +68,7 @@ read.asc <- function(fname)
                 ldply(valid,function(ind) mutate(blocks[[ind]][[vname]],block=ind))
             }
         
-        list(raw=collect('raw'),msg=collect('msg'),sacc=collect('sacc'),fix=collect('fix'),blinks=collect('blinks'))
+        list(raw=collect('raw'),msg=collect('msg'),sacc=collect('sacc'),fix=collect('fix'),blinks=collect('blinks'),info=info)
     }
 
 

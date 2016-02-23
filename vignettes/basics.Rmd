@@ -1,0 +1,86 @@
+---
+title: "Loading Eyelink data with eyelinker"
+author: "Simon Barthelmé"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Loading Eyelink data with eyelinker}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+We'll use test data supplied by SR Research (which I found in the cili package for Python). The test data can be found in the extdata/ directory of the package.
+
+```{r}
+require(eyelinker)
+#Look for file 
+fpath <- system.file("extdata/mono500.asc.gz",package="eyelinker")
+```
+
+asc files can be gigantic, so it's a good idea to compress them, R doesn't mind (here they're compressed in gzip format, hence the .gz).
+
+To read the file just call read.asc:
+
+```{r}
+dat <- read.asc(fpath)
+```
+
+dat is a list with fields:
+
+```{r}
+names(dat)
+```
+
+- raw is the raw data (eye position, velocity, etc.) as a function of time
+- sac are the saccade events as labelled by the Eyelink
+- fix are the fixations
+- blinks are the blinks
+- msg are message events
+- info contains some meta-data
+
+## Meta-data
+
+Some meta-data can be read from the "SAMPLES" lines in the asc file.
+
+```{r}
+str(dat$info)
+```
+
+- velocity: true if data contains eye velocity 
+- resolution: true if data contains resolution
+- cr: true if corneal reflection mode is used
+- htarg: true if data contains remote info (only applicable in remote setup)
+- input: true if data contains input info
+- left: true if left eye is recorded
+- right: true if right eye is recorded
+- mono: true if recording is monocular
+
+Here we have a monocular recording of the left eye. 
+
+## Raw data
+
+The raw data has a simple structure:
+
+```{r}
+raw <- dat$raw
+head(raw,3)
+```
+
+- time is a time stamp (ms)
+- xp, yp:  x and y position of the recorded eye
+- ps: pupil size (arb. units)
+- cr.info: status of corneal reflection tracking.  "..." means all's well. See manual for more.
+
+The block variable is probably irrelevant in most cases (the .asc file is divided into START and END blocks, and the block variable indexes them).
+
+In a binocular recording the raw data has the following structure:
+
+```{r}
+dat.bi <- system.file("extdata/bino1000.asc.gz",package="eyelinker") %>% read.asc
+head(dat.bi$raw,3)
+```
+
+The variables are the same as before, with the addition of a postfix corresponding to the eye (i.e. xpl is the x position of the left eye).
+
+
+

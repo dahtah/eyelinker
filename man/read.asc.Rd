@@ -16,6 +16,7 @@ msg: messages (no attempt is made to parse them)
 fix: fixations
 blinks: blinks
 sacc: saccades
+info: meta-data
 }
 \description{
 Read EyeLink ASC file
