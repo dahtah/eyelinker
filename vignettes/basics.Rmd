@@ -106,7 +106,7 @@ tail(raw.long,2)
 The eye position is now in a single column rather than two, and the column "coord" tells us if the valuye corresponds to the x or y position. The benefits may not be obvious now, but it does make plotting the traces via ggplot2 a lot easier:
 
 
-```{r}
+```{r  fig.width=5, fig.height=5}
 require(ggplot2)
 raw.long <- mutate(raw.long,ts=(time-min(time))/1e3) #let's have time in sec. 
 ggplot(raw.long,aes(ts,pos,col=coord))+geom_point()
@@ -114,7 +114,7 @@ ggplot(raw.long,aes(ts,pos,col=coord))+geom_point()
 
 In this particular file there are four separate recording periods, corresponding to different "blocks" in the asc file, which we can check using:
 
-```{r}
+```{r fig.width=5, fig.height=5}
 ggplot(raw.long,aes(ts,pos,col=coord))+geom_line()+facet_wrap(~ block)
 ```
 
@@ -122,7 +122,7 @@ ggplot(raw.long,aes(ts,pos,col=coord))+geom_line()+facet_wrap(~ block)
 
 The Eyelink automatically detects saccades in an online fashion. The results are converted to a data.frame: 
 
-```{r}
+```{r }
 sac <- dat$sac
 head(sac,2)
 ```
@@ -145,11 +145,129 @@ head(dat.bi$sac,3)
 
 The only difference is in the "eye" column, which tells you in which eye the saccade was first recorded. 
 
-## Labelling the saccades in the raw traces
+## Labelling saccades in the raw traces
 
 To see if the saccades have been labelled correctly, we'll have to find the corresponding time samples in the raw data.
 
+The easiest way to achieve this is to view the detected saccades as a set of temporal intervals, with endpoints given by stime and etime. We'll use function "%In%" to check if each time point in the raw data can be found in one of these intervals.
+
 ```{r}
-
-
+Sac <- cbind(sac$stime,sac$etime) #Define a set of intervals with these endpoints
+#See also: intervals package
+raw <- mutate(raw,saccade=time %In% Sac)
+head(raw,3)
+mean(raw$saccade)*100 #6% of time samples correspond to saccades
 ```
+
+Now each time point labelled with "saccade==TRUE" corresponds to a saccade detected by the eye tracker. 
+
+Let's plot traces again:
+
+```{r fig.width=5, fig.height=5}
+mutate(raw.long,saccade=time %In% Sac) %>% filter(block==1) %>% ggplot(aes(ts,pos,group=coord,col=saccade))+geom_line()
+```
+
+
+
+## Fixations
+
+Fixations are stored in a very similar way to saccades:
+
+```{r}
+fix <- dat$fix
+head(fix,3)
+```
+
+Each line is a fixation, and the columns are:
+
+- stime and etime: the start and end times of the fixation
+- dur: duration (ms)
+- axp, ayp: average eye position during fixation
+- aps: average pupil size during fixation 
+
+## Labelling fixations in the raw traces
+
+We can re-use essentially the same code to label fixations as we did to label saccades:
+
+```{r fig.width=5, fig.height=5}
+Fix <- cbind(fix$stime,fix$etime) #Define a set of intervals 
+mutate(raw.long,fixation=time %In% Fix) %>% filter(block==1) %>% ggplot(aes(ts,pos,group=coord,col=fixation))+geom_line()
+```
+
+
+We can get a fixation index using whichInterval:
+
+```{r}
+mutate(raw,fix.index=whichInterval(time,Fix)) %>% head(4)
+```
+
+Let's check that the average x and y positions are correct:
+
+```{r}
+raw <- mutate(raw,fix.index=whichInterval(time,Fix))
+fix.check <- filter(raw,!is.na(fix.index)) %>% group_by(fix.index) %>% summarise(axp=mean(xp),ayp=mean(yp)) %>% ungroup
+head(fix.check,3)
+```
+
+We grouped all time samples according to fixation index, and computed mean x and y positions.
+
+We verify that we recovered the right values:
+
+```{r}
+all.equal(fix.check$axp,fix$axp)
+all.equal(fix.check$ayp,fix$ayp)
+```
+
+## Blinks
+
+Blinks are detected automatically, and stored similarly to saccades and fixations. We load a different dataset:
+
+```{r}
+fpath <- system.file("extdata/monoRemote500.asc.gz",package="eyelinker")
+dat <- read.asc(fpath)
+dat$blinks
+```
+
+The fields should be self-explanatory. We'll re-use some the code above to label the blinks:
+
+```{r}
+Blk <- cbind(dat$blinks$stime,dat$blinks$etime) #Define a set of intervals
+
+filter(dat$raw,time %In% Blk) %>% head
+```
+
+Not surprisingly, during blinks, eye position data is unavailable. Unfortunately, it takes the eyetracker a bit of time to detect blinks, and the eye position data around blinks may be suspect. The eyelink manual suggests that getting rid of samples that are within 100ms of a blink should eliminate most problems. We'll use some functions from package *intervals* to expand our blinks by 100ms:
+
+```{r}
+require(intervals)
+Suspect <- Intervals(Blk) %>% expand(100,"absolute")
+Suspect
+```
+
+Here's an example of a trace around a blink:
+
+```{r fig.width=5, fig.height=5}
+raw.long <- dplyr::select(dat$raw,time,xp,yp,block) %>% gather("coord","pos",xp,yp)
+raw.long <- mutate(raw.long,ts=(time-min(time))/1e3) #let's have time in sec. 
+ex <- mutate(raw.long,suspect=time %In% Suspect) %>% filter(block==2) 
+ggplot(ex,aes(ts,pos,group=coord,col=suspect))+geom_line()+coord_cartesian(xlim=c(34,40))+labs(x="time (s)")
+```
+
+The traces around the blink are indeed spurious. 
+
+## Messages 
+
+The last data structure we need to cover contains messages:
+
+```{r}
+head(dat$msg)
+```
+
+The lines correspond to "MSG" lines in the original asc file. Since messages can be anything read.asc leaves them unparsed. If you're interested in certain event types (e.g., time stamps), you'll have to parse msg$text yourself.
+Here for example we extract all messages that contain the words "Saccade_target":
+
+```{r}
+library(stringr)
+filter(dat$msg,str_detect(text,fixed("blank_screen"))) 
+```
+

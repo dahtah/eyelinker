@@ -14,6 +14,7 @@
 ##' @export
 whichInterval <- function(x,Intv)
 {
+    if (is.integer(x)) x <- as.double(x)
     if (is.matrix(Intv))
     {
         Intv <- Intervals(Intv)
@@ -46,6 +47,7 @@ whichInterval <- function(x,Intv)
 ##' @export
 `%In%` <- function(x,Intv)
 {
+    if (is.integer(x)) x <- as.double(x)
     if (is.matrix(Intv))
     {
         Intv <- Intervals(Intv)
