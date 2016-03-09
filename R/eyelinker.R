@@ -6,7 +6,7 @@
 #'
 #' The main function in the package is read.asc. 
 #' @docType package
-#' @name imager
+#' @name eyelinker
 NULL
 
 #' @importFrom stringr str_match str_split str_sub str_trim str_replace str_replace_all str_detect fixed

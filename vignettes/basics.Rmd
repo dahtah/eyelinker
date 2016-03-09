@@ -11,7 +11,7 @@ vignette: >
 
 We'll use test data supplied by SR Research (which I found in the cili package for Python). The test data can be found in the extdata/ directory of the package.
 
-```{r}
+```{r results="hide",message=FALSE}
 require(eyelinker)
 require(dplyr)
 
