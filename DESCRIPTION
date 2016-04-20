@@ -1,6 +1,6 @@
 Package: eyelinker
 Type: Package
-Title: Load Raw Data From Eyelink Eye Trackers
+Title: Load Raw Data from Eyelink Eye Trackers
 Version: 0.1
 Date: 2016-04-20
 Author: Simon Barthelme <simon.barthelme@gipsa-lab.fr>
