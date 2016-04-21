@@ -1,8 +1,10 @@
+[![CRAN Version](http://www.r-pkg.org/badges/version/eyelinker)](https://cran.rstudio.com/web/packages/eyelinker)
+
 # Eyelinker: a package for reading Eyelink data
 
 Turns horrible Eyelink .asc files into less horrible R data structures.
 
-	devtools::install_github("dahtah/eyelinker",build_vignettes=TRUE)
+	install.packages("eyelinker")
 	library(eyelinker)
 	#Example file from SR research that ships with the package
 	fpath <- system.file("extdata/mono500.asc.gz",package="eyelinker")
