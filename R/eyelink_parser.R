@@ -257,7 +257,10 @@ getInfo <- function(inp)
     info$htarg <- FALSE
     if (str_detect(l,fixed("HTARG")))
     {
-        info$htarg <- str_detect(inp,fixed(".............")) %>% any
+        #Normally the htarg stuff is just twelve dots in a row, but in case there are errors we need
+        #the following regexp.
+        pat <- "(M|\\.)(A|\\.)(N|\\.)(C|\\.)(F|\\.)(T|\\.)(B|\\.)(L|\\.)(R|\\.)(T|\\.)(B|\\.)(L|\\.)(R|\\.)"
+        info$htarg <- str_detect(inp,pat) %>% any
     }
     info$input <- str_detect(l,fixed("INPUT"))
     info$left <- str_detect(l,fixed("LEFT"))
