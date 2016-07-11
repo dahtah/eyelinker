@@ -220,14 +220,22 @@ process.block <- function(blk,info)
 
         #Turn into data.frame
         raw <- tsv2df(raw)
-        names(raw) <- raw.colnames
+        if (ncol(raw) == length(raw.colnames))
+            {
+                names(raw) <- raw.colnames
+            }
+        else
+            {
+                warning("Unknown columns in raw data. Making a guess, but please check the results")
+                names(raw)[1:length(raw.colnames)] <- raw.colnames
+            }
         nCol <- ncol(raw)
         if (any(iscrap))
             {
                 crapmat <- matrix(NA,length(crap),nCol)
                 crapmat[,1] <- as.numeric(str_match(crap,"^(\\d+)")[,1])
                 crapmat <- as.data.frame(crapmat)
-                names(crapmat) <- raw.colnames
+                names(crapmat) <- names(raw)
                 raw <- rbind(raw,crapmat)
                 raw <- raw[order(raw$time),]
             }
