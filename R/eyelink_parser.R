@@ -214,7 +214,8 @@ process.block <- function(blk,info)
 #        raw <- str_replace(raw,"\\.+$","")
 
         #Filter out all the lines where eye position is missing, they're pointless and stored in an inconsistent manner
-        iscrap <- str_detect(raw,"^\\d+\\s+\\.")
+        #iscrap <- str_detect(raw,"^\\d+\\s+\\.")
+        iscrap <- str_detect(raw, "\\s+\\.\\s+\\.\\s+")
         crap <- raw[iscrap]
         raw <- raw[!iscrap]
 
