@@ -10,6 +10,7 @@
 NULL
 
 #' @importFrom stringr str_match str_split str_sub str_trim str_replace str_replace_all str_detect fixed
+#' @importFrom purrr map map_dbl map_df compact
 #' @importFrom readr read_tsv
 #' @importFrom plyr llply dlply ldply mutate
 #' @importFrom stringi stri_enc_toascii

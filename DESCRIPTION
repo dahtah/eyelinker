@@ -16,7 +16,8 @@ Imports:
     stringr,
     readr,
     magrittr,
-    intervals
+    intervals,
+    purrr
 License: GPL-3
 RoxygenNote: 5.0.1
 Suggests: testthat,

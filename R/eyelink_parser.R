@@ -56,13 +56,32 @@ read.asc <- function(fname)
         bl.end <- str_detect(inp,"^END")%>%which
         nBlocks <- length(bl.start)
         blocks <- llply(1:nBlocks,function(indB) process.block(inp[bl.start[indB]:bl.end[indB]],info))
+        ## collect <- function(vname)
+        ##     {
+        ##         valid <- Filter(function(ind) !is.null(blocks[[ind]][[vname]]),1:length(blocks))
+        ##         ldply(valid,function(ind) mutate(blocks[[ind]][[vname]],block=ind))
+        ##     }
         collect <- function(vname)
+        {
+            #Merge the data from all the different blocks
+            out <- suppressWarnings(try(map(blocks,vname) %>% compact %>% map_df(identity,.id="block") ,TRUE))
+            if (is(out,"try-error"))
             {
-                valid <- Filter(function(ind) !is.null(blocks[[ind]][[vname]]),1:length(blocks))
-                ldply(valid,function(ind) mutate(blocks[[ind]][[vname]],block=ind))
+                sprintf("Failed to merge %s",vname) %>% warning
+                #Merging has failed, return as list
+                map(blocks,vname)
             }
-        
-        list(raw=collect('raw'),msg=collect('msg'),sacc=collect('sacc'),fix=collect('fix'),blinks=collect('blinks'),info=info)
+            else
+            {
+                out
+            }
+        }
+        vars <- c("raw","msg","sacc","fix","blinks","info")
+        #Collect all the data across blocks
+        out <- map(vars,collect) %>% setNames(vars)
+
+        out$info <- info
+        out
     }
 
 
@@ -104,7 +123,7 @@ process.block.header <- function(blk)
     }
 
 #Turn a list of strings with tab-separated field into a data.frame
-tsv2df <- function(dat)
+tsv2df <- function(dat,coltypes)
     {
         if (length(dat)==1)
             {
@@ -114,8 +133,8 @@ tsv2df <- function(dat)
             {
                 dat <- paste0(dat,collapse="\n")
             }
-        out <- read_tsv(dat,col_names=FALSE)
-        if (!(is.null(attr(suppressWarnings(out), "problems")))) browser()
+        out <- read_tsv(dat,col_names=FALSE,col_types=paste0(coltypes,collapse=""))
+##        if (!(is.null(attr(suppressWarnings(out), "problems")))) browser()
         out
     }
 
@@ -203,10 +222,12 @@ process.events <- function(evt,events)
 
 #A block is whatever one finds between a START and an END event
 process.block <- function(blk,info)
-    {
+{
         hd <- process.block.header(blk)
         blk <- hd$the.rest
-        raw.colnames <- coln.raw(info)
+        colinfo <- coln.raw(info)
+        raw.colnames <- colinfo$names
+        raw.coltypes <- colinfo$types
         
         #Get the raw data (lines beginning with a number)
         which.raw <- str_detect(blk,'^\\d')
@@ -214,24 +235,26 @@ process.block <- function(blk,info)
 #        raw <- str_replace(raw,"\\.+$","")
 
         #Filter out all the lines where eye position is missing, they're pointless and stored in an inconsistent manner
-        #iscrap <- str_detect(raw,"^\\d+\\s+\\.")
         iscrap <- str_detect(raw, "\\s+\\.\\s+\\.\\s+")
         crap <- raw[iscrap]
         raw <- raw[!iscrap]
+        if (length(raw)>0) #We have some data left
+        {
 
-        #Turn into data.frame
-        raw <- tsv2df(raw)
-        if (ncol(raw) == length(raw.colnames))
+            #Turn into data.frame
+            raw <- tsv2df(raw,raw.coltypes)
+            if (ncol(raw) == length(raw.colnames))
             {
                 names(raw) <- raw.colnames
             }
-        else
+            else
             {
-                warning("Unknown columns in raw data. Making a guess, but please check the results")
-                names(raw)[1:length(raw.colnames)] <- raw.colnames
+                warning("Unknown columns in raw data. Assuming first one is time, please check the others")
+                #names(raw)[1:length(raw.colnames)] <- raw.colnames
+                names(raw)[1] <- "time"
             }
-        nCol <- ncol(raw)
-        if (any(iscrap))
+            nCol <- ncol(raw)
+            if (any(iscrap))
             {
                 crapmat <- matrix(NA,length(crap),nCol)
                 crapmat[,1] <- as.numeric(str_match(crap,"^(\\d+)")[,1])
@@ -240,7 +263,12 @@ process.block <- function(blk,info)
                 raw <- rbind(raw,crapmat)
                 raw <- raw[order(raw$time),]
             }
-        
+        }
+        else
+        {
+            warning("All data are missing in current block")
+            raw <- NULL
+        }
         #The events (lines not beginning with a number)
         evt <- blk[!which.raw]
         res <- process.events(evt,hd$events)
@@ -283,32 +311,38 @@ getInfo <- function(inp)
 coln.raw <- function(info)
 {
     eyev <- c("xp","yp","ps")
+    ctype <- rep("d",3)
     if (info$velocity)
     {
         eyev <- c(eyev,"xv","yv")
+        ctype <- c(ctype,rep("d",2))
     }
     if (info$resolution)
     {
         eyev <- c(eyev,"xr","yr")
+        ctype <- c(ctype,rep("d",2))
     }
 
     if (!info$mono)
     {
         eyev <- c(paste0(eyev,"l"),paste0(eyev,"r"))
+        ctype <- rep(ctype,2)
     }
 
     #With corneal reflections we need an extra column
     if (info$cr)
     {
         eyev <- c(eyev,"cr.info")
+        ctype <- c(ctype,"c")
     }
 
     #Three extra columns for remote set-up
     if (info$htarg)
     {
         eyev <- c(eyev,"tx","ty","td","remote.info")
+        ctype <- c(ctype,c("d","d","d","c"))
     }
     
     
-    c("time",eyev)
+    list(names=c("time",eyev),types=c("i",ctype))
 }
